@@ -22,13 +22,34 @@ function App() {
       const { lat, lon } = result.coord;
 
 
-      const forecastResponse = await fetch(`${api.base}forecast/daily?lat=${lat}&lon=${lon}&cnt=7&units=metric&appid=${api.key}`);
+      const forecastResponse = await fetch(`${api.base}forecast?lat=${lat}&lon=${lon}&units=metric&appid=${api.key}`);
       const forecastResult = await forecastResponse.json();
 
+      const dailyForecast = {};
+      forecastResult.list.forEach(item => {
+        const date = dayjs(item.dt_txt).format('YYYY-MM-DD');
+        console.log(item.dt_txt);
+        if (!dailyForecast[date]) {
+          dailyForecast[date] = {
+            temp: 0,
+            weather: item.weather[0].main,
+            count: 0,
+          };
+        }
+        dailyForecast[date].temp += item.main.temp;
+        dailyForecast[date].count += 1;
+      });
+
+      const processedForecast = Object.keys(dailyForecast).map(date => ({
+        date,
+        temp: Math.round(dailyForecast[date].temp / dailyForecast[date].count),
+        weather: dailyForecast[date].weather
+      }));
+
       setWeather(result);
-      setForecast(forecastResult.list || []);
+      setForecast(processedForecast);
       setQuery('');
-      console.log(forecastResult);
+      console.log(processedForecast);
     } else {
       console.error("도시를 찾을 수 없습니다:", result);
     }
@@ -49,7 +70,7 @@ function App() {
           </div>
         </form>
 
-        {weather.main && (
+        {weather.main !== undefined && (
           <div>
             <div className='location-box'>
               <div className='location'>{weather.name}, {weather.sys.country}</div>
@@ -65,12 +86,12 @@ function App() {
               {forecast.length > 0 ? (
                 forecast.map((day, index) => (
                   <div key={index} className='day'>
-                    <div className='date'>{dayjs.unix(day.dt).format("dddd, DD MMM")}</div>
+                    <div className='date'>{dayjs(day.date).format("dddd, DD MMM")}</div>
                     <div className='temp'>
-                      {Math.round(day.temp.day)}°C
+                      {Math.round(day.temp)}°C
                     </div>
                     <div className='weather'>
-                      {day.weather[0].main}
+                      {day.weather}
                     </div>
                   </div>
                 ))

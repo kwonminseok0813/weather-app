@@ -25,26 +25,33 @@ function App() {
       const forecastResponse = await fetch(`${api.base}forecast?lat=${lat}&lon=${lon}&units=metric&appid=${api.key}`);
       const forecastResult = await forecastResponse.json();
 
-      const dailyForecast = {};
-      forecastResult.list.forEach(item => {
-        const date = dayjs(item.dt_txt).format('YYYY-MM-DD');
-        console.log(item.dt_txt);
-        if (!dailyForecast[date]) {
-          dailyForecast[date] = {
-            temp: 0,
-            weather: item.weather[0].main,
-            count: 0,
-          };
-        }
-        dailyForecast[date].temp += item.main.temp;
-        dailyForecast[date].count += 1;
-      });
+      // const dailyForecast = {};
+      // forecastResult.list.forEach(item => {
+      //   const date = dayjs(item.dt_txt).format('YYYY-MM-DD');
+      //   console.log(item.dt_txt);
+      //   if (!dailyForecast[date]) {
+      //     dailyForecast[date] = {
+      //       temp: 0,
+      //       weather: item.weather[0].main,
+      //       count: 0,
+      //     };
+      //   }
+      //   dailyForecast[date].temp += item.main.temp;
+      //   dailyForecast[date].count += 1;
+      // });
 
-      const processedForecast = Object.keys(dailyForecast).map(date => ({
+      // const processedForecast = Object.keys(dailyForecast).map(date => ({
+      //   date,
+      //   temp: Math.round(dailyForecast[date].temp / dailyForecast[date].count),
+      //   weather: dailyForecast[date].weather
+      // }));
+      const processedForecast = Object.entries(Object.groupBy(forecastResult.list, item => dayjs(item.dt_txt).format('YYYY-MM-DD'))).map(([date, values]) => ({
         date,
-        temp: Math.round(dailyForecast[date].temp / dailyForecast[date].count),
-        weather: dailyForecast[date].weather
+        temp: Math.round(values.reduce((prev, curr) => prev + curr.main.temp, 0) / values.length),
+        weather: values[0].weather[0].main,
       }));
+
+
 
       setWeather(result);
       setForecast(processedForecast);
